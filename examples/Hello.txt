@@ -1,3 +1,0 @@
-Hello World!
-
-Just check the eol using your editor.

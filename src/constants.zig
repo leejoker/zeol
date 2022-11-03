@@ -1,13 +1,12 @@
 const std = @import("std");
 const fs = std.fs;
 
-pub const params = 
+pub const params =
     \\-h, --help                        Display this help and exit.
     \\-p, --path            <str>...    the file or dir path you want to change eol.
     \\-t, --type            <str>...    LF or CRLF
     \\-x, --extension       <str>...    file extension, example: zig
     \\-h, --hidden_enable               available to change hidden dir and file
-    \\<str>...
     \\
 ;
 
@@ -16,6 +15,7 @@ pub const helpMessage =
     \\-p, --path        <str>   source file or dir path, example --path "D:\zig\README.md"
     \\-t, --type        <str>   target eol type, example: eoler --type LR
     \\-x, --extension   <str>   file extension, example: zig
+    \\-h, --hidden_enable               available to change hidden dir and file
 ;
 
 pub const Eol = enum(u2) {

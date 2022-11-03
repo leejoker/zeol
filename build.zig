@@ -1,4 +1,5 @@
 const std = @import("std");
+const pkgs = @import("deps.zig").pkgs;
 
 pub fn build(b: *std.build.Builder) void {
     // Standard target options allows the person running `zig build` to choose
@@ -13,7 +14,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const exe = b.addExecutable("zeol", "src/main.zig");
     exe.addPackagePath("constants", "src/constants.zig");
-    exe.addPackagePath("clap", "pkgs/clap/clap.zig");
+    pkgs.addAllTo(exe);
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();

@@ -26,6 +26,7 @@ pub fn main() !void {
 
     if (res.args.help) {
         debug.print("Help Message: \n{s}\n", .{cons.helpMessage});
+        return;
     } else {
         if (res.args.path.len > 0) {
             fileDirPath = res.args.path[0];
