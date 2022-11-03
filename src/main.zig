@@ -9,15 +9,7 @@ const process = std.process;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const params = comptime clap.parseParamsComptime(
-        \\-h, --help                        Display this help and exit.
-        \\-p, --path            <str>...    the file or dir path you want to change eol.
-        \\-t, --type            <str>...    LF or CRLF
-        \\-x, --extension       <str>...    file extension, example: zig
-        \\-h, --hidden_enable               available to change hidden dir and file
-        \\<str>...
-        \\
-    );
+    const params = comptime clap.parseParamsComptime(cons.params);
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
@@ -33,7 +25,7 @@ pub fn main() !void {
     var hidenEnable: bool = false;
 
     if (res.args.help) {
-        showHelpMessage();
+        debug.print("Help Message: \n{s}\n", .{cons.helpMessage});
     } else {
         if (res.args.path.len > 0) {
             fileDirPath = res.args.path[0];
@@ -62,16 +54,6 @@ pub fn main() !void {
     handleFiles(fileDirPath, eolType, extension, hidenEnable) catch |err| {
         debug.print("{any}\n", .{err});
     };
-}
-
-fn showHelpMessage() void {
-    const helpMessage =
-        \\-h, --help                Display this help and exit.
-        \\-p, --path        <str>   source file or dir path, example --path "D:\zig\README.md"
-        \\-t, --type        <str>   target eol type, example: eoler --type LR
-        \\-x, --extension   <str>   file extension, example: zig
-    ;
-    debug.print("Help Message: \n{s}\n", .{helpMessage});
 }
 
 fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bool) !void {
