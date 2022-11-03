@@ -1,3 +1,4 @@
+const cons = @import("constants");
 const clap = @import("clap");
 const std = @import("std");
 
@@ -5,20 +6,15 @@ const debug = std.debug;
 const io = std.io;
 const fs = std.fs;
 const process = std.process;
-
-const Eol = enum(u2) {
-    LF,
-    CRLF,
-};
-
-const ZEolError = error{WrongEolTypeError};
+const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const params = comptime clap.parseParamsComptime(
-        \\-h, --help                    Display this help and exit.
-        \\-p, --path        <str>...    the file or dir path you want to change eol.
-        \\-t, --type        <str>...    LF or CRLF
-        \\-x, --extension   <str>...    file extension, example: zig
+        \\-h, --help                        Display this help and exit.
+        \\-p, --path            <str>...    the file or dir path you want to change eol.
+        \\-t, --type            <str>...    LF or CRLF
+        \\-x, --extension       <str>...    file extension, example: zig
+        \\-h, --hidden_enable               available to change hidden dir and file
         \\<str>...
         \\
     );
@@ -34,6 +30,7 @@ pub fn main() !void {
     var fileDirPath: []const u8 = undefined;
     var eolType: u8 = undefined;
     var extension: ?[]const u8 = null;
+    var hidenEnable: bool = false;
 
     if (res.args.help) {
         showHelpMessage();
@@ -50,7 +47,7 @@ pub fn main() !void {
             } else if (std.mem.eql(u8, eolTypeStr, "CRLF")) {
                 eolType = 1;
             } else {
-                return ZEolError.WrongEolTypeError;
+                return cons.ZEolError.WrongEolTypeError;
             }
         } else {
             debug.print("type is empty", .{});
@@ -58,8 +55,11 @@ pub fn main() !void {
         if (res.args.extension.len > 0) {
             extension = res.args.extension[0];
         }
+        if (res.args.hidden_enable) {
+            hidenEnable = true;
+        }
     }
-    handleFiles(fileDirPath, eolType, extension) catch |err| {
+    handleFiles(fileDirPath, eolType, extension, hidenEnable) catch |err| {
         debug.print("{any}\n", .{err});
     };
 }
@@ -74,15 +74,32 @@ fn showHelpMessage() void {
     debug.print("Help Message: \n{s}\n", .{helpMessage});
 }
 
-fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8) !void {
+fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bool) !void {
+    debug.print("path: {s}\n", .{path});
     if (!isDir(path) and extensionCheck(extension)) {
         if (extEql(path, extension)) {
             var content: []u8 = try readFile(path);
-            content = cleanEol(eolType, content);
-            try writeFile(path, content);
+            debug.print("eolType: {any}, content length: {any}\n", .{ eolType, content.len });
+            const size = checkOutputSize(eolType, content);
+            debug.print("output size: {}\n", .{size});
+            if (size != content.len) {
+                var memory: []u8 = try allocator.alloc(u8, size);
+                defer allocator.free(memory);
+                try cleanEol(content, &memory);
+                try writeFile(path, memory);
+            }
         }
     } else {
-        debug.print("Do nothing", .{});
+        const iterableDir = try fs.openIterableDirAbsolute(path, cons.openDirOptions);
+        var iterator = iterableDir.iterate();
+        while (try iterator.next()) |entry| {
+            if (std.mem.startsWith(u8, entry.name, ".") and !hidden) {
+                continue;
+            }
+            var pathArray = [_][]const u8{ path, entry.name };
+            var curPath: []u8 = try std.mem.join(allocator, "/", &pathArray);
+            try handleFiles(curPath, eolType, extension, hidden);
+        }
     }
 }
 
@@ -97,8 +114,7 @@ fn extensionCheck(extension: ?[]const u8) bool {
 }
 
 fn isDir(path: []const u8) bool {
-    const options = fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = false };
-    var dir = fs.openDirAbsolute(path, options) catch |e| {
+    var dir = fs.openDirAbsolute(path, cons.openDirOptions) catch |e| {
         debug.print("{any}\n", .{e});
         return false;
     };
@@ -109,19 +125,19 @@ fn isDir(path: []const u8) bool {
 fn extEql(path: []const u8, extension: ?[]const u8) bool {
     if (extension != null) {
         const ext = fs.path.extension(path);
+        debug.print("{s}\n", .{ext});
+        if (ext.len == 0) {
+            return false;
+        }
         return std.mem.eql(u8, ext[1..], extension.?);
     }
     return true;
 }
 
 fn readFile(path: []const u8) ![]u8 {
-    const fileOptions = fs.File.OpenFlags{
-        .mode = fs.File.OpenMode.read_only,
-        .lock = fs.File.Lock.None,
-    };
     var file: fs.File = undefined;
     {
-        file = try fs.openFileAbsolute(path, fileOptions);
+        file = try fs.openFileAbsolute(path, cons.openFileFlags);
         defer file.close();
         var buffer: [1024 * 1024]u8 = undefined;
         var bytesRead = try file.readAll(&buffer);
@@ -130,34 +146,36 @@ fn readFile(path: []const u8) ![]u8 {
 }
 
 fn writeFile(path: []const u8, content: []u8) !void {
-    const fileOptions = fs.File.OpenFlags{
-        .mode = fs.File.OpenMode.read_write,
-        .lock = fs.File.Lock.Exclusive,
-    };
     var file: fs.File = undefined;
     {
-        file = try fs.openFileAbsolute(path, fileOptions);
+        file = try fs.createFileAbsolute(path, cons.createFileFlags);
         defer file.close();
         try file.writeAll(content);
     }
 }
 
-fn cleanEol(eolType: u8, content: []u8) []u8 {
-    var output: []u8 = undefined;
+fn checkOutputSize(eolType: u8, content: []u8) usize {
     switch (eolType) {
-        @enumToInt(Eol.LF) => {
-            if (std.mem.count(u8, content, "\r\n") > 0) {
-                _ = std.mem.replace(u8, content, "\r\n", "\n", output[0..]);
-                return output;
-            }
+        @enumToInt(cons.Eol.LF) => {
+            const crlfCount = std.mem.count(u8, content, "\r\n");
+            return content.len - crlfCount;
         },
-        @enumToInt(Eol.CRLF) => {
-            if (std.mem.count(u8, content, "\n") > 0) {
-                _ = std.mem.replace(u8, content, "\n", "\r\n", output[0..]);
-                return output;
-            }
+        @enumToInt(cons.Eol.CRLF) => {
+            const lfCount = std.mem.count(u8, content, "\n");
+            return content.len + lfCount;
         },
         else => unreachable,
     }
-    return content;
+}
+
+fn cleanEol(content: []u8, output: *[]u8) !void {
+    if (output.*.len > content.len) {
+        _ = std.mem.replace(u8, content, "\n", "\r\n", output.*[0..]);
+        debug.print("{s}\n", .{output.*});
+    } else if (output.*.len < content.len) {
+        _ = std.mem.replace(u8, content, "\r\n", "\n", output.*[0..]);
+        debug.print("{s}\n", .{output.*});
+    } else {
+        return;
+    }
 }
