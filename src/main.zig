@@ -153,10 +153,10 @@ fn checkOutputSize(eolType: u8, content: []u8) usize {
 
 fn cleanEol(content: []u8, output: *[]u8) !void {
     if (output.*.len > content.len) {
-        _ = std.mem.replace(u8, content, "\n", "\r\n", output.*[0..]);
+        _ = std.mem.replace(u8, content, cons.LF[0..], cons.CRLF[0..], output.*[0..]);
         debug.print("{s}\n", .{output.*});
     } else if (output.*.len < content.len) {
-        _ = std.mem.replace(u8, content, "\r\n", "\n", output.*[0..]);
+        _ = std.mem.replace(u8, content, cons.CRLF[0..], cons.LF[0..], output.*[0..]);
         debug.print("{s}\n", .{output.*});
     } else {
         return;

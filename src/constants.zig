@@ -18,7 +18,11 @@ pub const helpMessage =
     \\-h, --hidden_enable               available to change hidden dir and file
 ;
 
-pub const Eol = enum(u2) {
+pub const CR: [1]u8 = [1]u8{0x0D};
+pub const LF: [1]u8 = [1]u8{0x0A};
+pub const CRLF: [2]u8 = CR ++ LF;
+
+pub const Eol = enum(u8) {
     LF,
     CRLF,
 };
