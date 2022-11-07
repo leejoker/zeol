@@ -1,6 +1,6 @@
 # ZEol
 
-This is a tool for changing File Eol.
+This is a tool for changing File Eol. Just like dos2unix.
 
 ## TODO
 
