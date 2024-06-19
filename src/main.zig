@@ -1,4 +1,4 @@
-const cons = @import("constants");
+const cons = @import("constants.zig");
 const clap = @import("clap");
 const std = @import("std");
 
@@ -9,10 +9,14 @@ const process = std.process;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
     const params = comptime clap.parseParamsComptime(cons.params);
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
+        .allocator = gpa.allocator(),
     }) catch |err| {
         diag.report(io.getStdErr().writer(), err) catch {};
         return err;
@@ -24,7 +28,7 @@ pub fn main() !void {
     var extension: ?[]const u8 = null;
     var hidenEnable: bool = false;
 
-    if (res.args.help) {
+    if (res.args.help != 0) {
         debug.print("Help Message: \n{s}\n", .{cons.helpMessage});
         return;
     } else {
@@ -34,7 +38,7 @@ pub fn main() !void {
             debug.print("path is empty", .{});
         }
         if (res.args.type.len > 0) {
-            var eolTypeStr = res.args.type[0];
+            const eolTypeStr = res.args.type[0];
             if (std.mem.eql(u8, eolTypeStr, "LF")) {
                 eolType = 0;
             } else if (std.mem.eql(u8, eolTypeStr, "CRLF")) {
@@ -48,7 +52,7 @@ pub fn main() !void {
         if (res.args.extension.len > 0) {
             extension = res.args.extension[0];
         }
-        if (res.args.hidden_enable) {
+        if (res.args.hidden_enable != 0) {
             hidenEnable = true;
         }
     }
@@ -61,7 +65,7 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
     debug.print("path: {s}\n", .{path});
     if (!isDir(path) and extensionCheck(extension)) {
         if (extEql(path, extension)) {
-            var content: []u8 = try readFile(path);
+            const content: []u8 = try readFile(path);
             debug.print("eolType: {any}, content length: {any}\n", .{ eolType, content.len });
             const size = checkOutputSize(eolType, content);
             debug.print("output size: {}\n", .{size});
@@ -73,14 +77,14 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
             }
         }
     } else {
-        const iterableDir = try fs.openIterableDirAbsolute(path, cons.openDirOptions);
+        const iterableDir = try fs.openDirAbsolute(path, cons.openDirOptions);
         var iterator = iterableDir.iterate();
         while (try iterator.next()) |entry| {
             if (std.mem.startsWith(u8, entry.name, ".") and !hidden) {
                 continue;
             }
             var pathArray = [_][]const u8{ path, entry.name };
-            var curPath: []u8 = try std.mem.join(allocator, "/", &pathArray);
+            const curPath: []u8 = try std.mem.join(allocator, "/", &pathArray);
             try handleFiles(curPath, eolType, extension, hidden);
         }
     }
@@ -123,7 +127,7 @@ fn readFile(path: []const u8) ![]u8 {
         file = try fs.openFileAbsolute(path, cons.openFileFlags);
         defer file.close();
         var buffer: [1024 * 1024]u8 = undefined;
-        var bytesRead = try file.readAll(&buffer);
+        const bytesRead = try file.readAll(&buffer);
         return buffer[0..bytesRead];
     }
 }
@@ -139,11 +143,11 @@ fn writeFile(path: []const u8, content: []u8) !void {
 
 fn checkOutputSize(eolType: u8, content: []u8) usize {
     switch (eolType) {
-        @enumToInt(cons.Eol.LF) => {
+        @intFromEnum(cons.Eol.LF) => {
             const crlfCount = std.mem.count(u8, content, "\r\n");
             return content.len - crlfCount;
         },
-        @enumToInt(cons.Eol.CRLF) => {
+        @intFromEnum(cons.Eol.CRLF) => {
             const lfCount = std.mem.count(u8, content, "\n");
             return content.len + lfCount;
         },

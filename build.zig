@@ -1,25 +1,25 @@
 const std = @import("std");
-const pkgs = @import("deps.zig").pkgs;
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
     // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
 
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
+    const clap = b.dependency("clap", .{});
 
-    const exe = b.addExecutable("zeol", "src/main.zig");
-    exe.addPackagePath("constants", "src/constants.zig");
-    pkgs.addAllTo(exe);
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
-    exe.install();
+    const exe = b.addExecutable(.{
+        .name = "zeol",
+        .optimize = optimize,
+        .target = target,
+        .root_source_file = b.path("src/main.zig"),
+    });
+    exe.root_module.addImport("clap", clap.module("clap"));
+    b.installArtifact(exe);
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);

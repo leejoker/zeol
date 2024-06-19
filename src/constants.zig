@@ -13,7 +13,7 @@ pub const params =
 pub const helpMessage =
     \\-h, --help                Display this help and exit.
     \\-p, --path        <str>   source file or dir path, example --path "D:\zig\README.md"
-    \\-t, --type        <str>   target eol type, example: eoler --type LR
+    \\-t, --type        <str>   target eol type, example: eoler --type LF
     \\-x, --extension   <str>   file extension, example: zig
     \\-h, --hidden_enable               available to change hidden dir and file
 ;
@@ -33,11 +33,11 @@ pub const openDirOptions = fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_
 
 pub const openFileFlags = fs.File.OpenFlags{
     .mode = fs.File.OpenMode.read_only,
-    .lock = fs.File.Lock.None,
+    .lock = fs.File.Lock.none,
 };
 
 pub const createFileFlags = fs.File.CreateFlags{
     .read = true,
     .truncate = true,
-    .lock = fs.File.Lock.Exclusive,
+    .lock = fs.File.Lock.exclusive,
 };

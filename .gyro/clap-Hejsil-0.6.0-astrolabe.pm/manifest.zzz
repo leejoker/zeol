@@ -1,1 +1,0 @@
-name:clap;version:0.6.0;root:clap.zig;description:Simple command line argument parsing library;license:MIT;source_url:"https://github.com/Hejsil/zig-clap"

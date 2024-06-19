@@ -1,0 +1,20 @@
+.{
+    .name = "zeol",
+    // Must match the `zls_version` in `build.zig`
+    .version = "0.0.1",
+    // Must match the `minimum_build_zig_version` in `build.zig`
+    .minimum_zig_version = "0.13.0",
+    // If you do not use Nix, a ZLS maintainer or Nix user can take care of this.
+    // Whenever the dependencies are updated, run the following command:
+    // ```bash
+    // nix run github:Cloudef/zig2nix#zon2nix -- build.zig.zon > deps.nix
+    // rm build.zig.zon2json-lock # this file is unnecessary
+    // ```
+    .dependencies = .{
+        .clap = .{
+            .url = "git+https://github.com/Hejsil/zig-clap#c0193e9247335a6c1688b946325060289405de2a",
+            .hash = "12207ee987ce045596cb992cfb15b0d6d9456e50d4721c3061c69dabc2962053644d",
+        },
+    },
+    .paths = .{""},
+}
