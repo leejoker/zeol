@@ -15,7 +15,7 @@ pub const helpMessage =
     \\-p, --path        <str>   source file or dir path, example --path "D:\zig\README.md"
     \\-t, --type        <str>   target eol type, example: eoler --type LF
     \\-x, --extension   <str>   file extension, example: zig
-    \\-h, --hidden_enable               available to change hidden dir and file
+    \\-h, --hidden_enable       available to change hidden dir and file
 ;
 
 pub const CR: [1]u8 = [1]u8{0x0D};
