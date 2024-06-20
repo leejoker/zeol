@@ -6,7 +6,6 @@ const debug = std.debug;
 const io = std.io;
 const fs = std.fs;
 const process = std.process;
-const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -57,12 +56,12 @@ pub fn main() !void {
             hidenEnable = true;
         }
     }
-    handleFiles(fileDirPath, eolType, extension, hidenEnable) catch |err| {
+    handleFiles(fileDirPath, eolType, extension, hidenEnable, gpa.allocator()) catch |err| {
         debug.print("Handle Files Error: {any}\n", .{err});
     };
 }
 
-fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bool) !void {
+fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bool, allocator: std.mem.Allocator) !void {
     if (!isDir(path) and extensionCheck(extension)) {
         debug.print("handle file: {s}\n", .{path});
         if (extEql(path, extension)) {
@@ -87,7 +86,8 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
             }
             var pathArray = [_][]const u8{ path, entry.name };
             const curPath: []u8 = try std.mem.join(allocator, "/", &pathArray);
-            try handleFiles(curPath, eolType, extension, hidden);
+            defer allocator.free(curPath);
+            try handleFiles(curPath, eolType, extension, hidden, allocator);
         }
     }
 }
