@@ -104,7 +104,7 @@ fn extensionCheck(extension: ?[]const u8) bool {
 
 fn isDir(path: []const u8) bool {
     var dir = fs.cwd().openDir(path, cons.openDirOptions) catch |e| {
-        debug.print("Dir Check Error: {any}\n", .{e});
+        debug.print("{any} is not a dir, run file handle\n", .{e});
         return false;
     };
     defer fs.Dir.close(&dir);
