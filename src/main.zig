@@ -67,7 +67,7 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
         debug.print("handle file: {s}\n", .{path});
         if (extEql(path, extension)) {
             const content: []u8 = try readFile(path);
-            debug.print("eolType: {any}, content length: {any}\n", .{ eolType, content.len });
+            debug.print("eolType: {s}, content length: {any}\n", .{ if (eolType == 0) "LF" else "CRLF", content.len });
             const size = checkOutputSize(eolType, content);
             debug.print("output size: {}\n", .{size});
             if (size != content.len) {
