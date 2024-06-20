@@ -65,7 +65,9 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
     if (!isDir(path) and extensionCheck(extension)) {
         debug.print("handle file: {s}\n", .{path});
         if (extEql(path, extension)) {
-            const content: []u8 = try readFile(path);
+            const content: []u8 = try readFile(path, allocator);
+            defer allocator.free(content);
+
             debug.print("eolType: {s}, content length: {any}\n", .{ if (eolType == 0) "LF" else "CRLF", content.len });
             const size = checkOutputSize(eolType, content);
             debug.print("output size: {}\n", .{size});
@@ -123,13 +125,14 @@ fn extEql(path: []const u8, extension: ?[]const u8) bool {
     return true;
 }
 
-fn readFile(path: []const u8) ![]u8 {
+fn readFile(path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     var file: fs.File = undefined;
     {
         file = try fs.cwd().openFile(path, cons.openFileFlags);
         defer file.close();
-        var buffer: [1024 * 1024]u8 = undefined;
-        const bytesRead = try file.readAll(&buffer);
+        const fileSize = try file.getEndPos();
+        var buffer = try allocator.alloc(u8, fileSize);
+        const bytesRead = try file.readAll(buffer);
         return buffer[0..bytesRead];
     }
 }
