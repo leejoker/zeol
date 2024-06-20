@@ -29,7 +29,7 @@ pub const Eol = enum(u8) {
 
 pub const ZEolError = error{WrongEolTypeError};
 
-pub const openDirOptions = fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = false };
+pub const openDirOptions = fs.Dir.OpenDirOptions{ .access_sub_paths = true, .iterate = true, .no_follow = false };
 
 pub const openFileFlags = fs.File.OpenFlags{
     .mode = fs.File.OpenMode.read_only,

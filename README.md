@@ -18,5 +18,5 @@ Help Message:
 
 ## TODO
 
-* use a config file to set includes and excludes(just like git config)
-* support relative path
+- [ ] use a config file to set includes and excludes(just like git config)  
+- [x] support relative path

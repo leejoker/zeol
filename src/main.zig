@@ -48,6 +48,7 @@ pub fn main() !void {
             }
         } else {
             debug.print("type is empty", .{});
+            return;
         }
         if (res.args.extension.len > 0) {
             extension = res.args.extension[0];
@@ -57,13 +58,13 @@ pub fn main() !void {
         }
     }
     handleFiles(fileDirPath, eolType, extension, hidenEnable) catch |err| {
-        debug.print("{any}\n", .{err});
+        debug.print("Handle Files Error: {any}\n", .{err});
     };
 }
 
 fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bool) !void {
-    debug.print("path: {s}\n", .{path});
     if (!isDir(path) and extensionCheck(extension)) {
+        debug.print("handle file: {s}\n", .{path});
         if (extEql(path, extension)) {
             const content: []u8 = try readFile(path);
             debug.print("eolType: {any}, content length: {any}\n", .{ eolType, content.len });
@@ -77,7 +78,8 @@ fn handleFiles(path: []const u8, eolType: u8, extension: ?[]const u8, hidden: bo
             }
         }
     } else {
-        const iterableDir = try fs.openDirAbsolute(path, cons.openDirOptions);
+        debug.print("handle dir: {s}\n", .{path});
+        const iterableDir = try fs.cwd().openDir(path, cons.openDirOptions);
         var iterator = iterableDir.iterate();
         while (try iterator.next()) |entry| {
             if (std.mem.startsWith(u8, entry.name, ".") and !hidden) {
@@ -101,8 +103,8 @@ fn extensionCheck(extension: ?[]const u8) bool {
 }
 
 fn isDir(path: []const u8) bool {
-    var dir = fs.openDirAbsolute(path, cons.openDirOptions) catch |e| {
-        debug.print("{any}\n", .{e});
+    var dir = fs.cwd().openDir(path, cons.openDirOptions) catch |e| {
+        debug.print("Dir Check Error: {any}\n", .{e});
         return false;
     };
     defer fs.Dir.close(&dir);
@@ -124,7 +126,7 @@ fn extEql(path: []const u8, extension: ?[]const u8) bool {
 fn readFile(path: []const u8) ![]u8 {
     var file: fs.File = undefined;
     {
-        file = try fs.openFileAbsolute(path, cons.openFileFlags);
+        file = try fs.cwd().openFile(path, cons.openFileFlags);
         defer file.close();
         var buffer: [1024 * 1024]u8 = undefined;
         const bytesRead = try file.readAll(&buffer);
@@ -135,7 +137,7 @@ fn readFile(path: []const u8) ![]u8 {
 fn writeFile(path: []const u8, content: []u8) !void {
     var file: fs.File = undefined;
     {
-        file = try fs.createFileAbsolute(path, cons.createFileFlags);
+        file = try fs.cwd().createFile(path, cons.createFileFlags);
         defer file.close();
         try file.writeAll(content);
     }
