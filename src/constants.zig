@@ -3,11 +3,11 @@ const fs = std.fs;
 
 pub const params =
     \\-h, --help                        Display this help and exit.
-    \\-p, --path            <str>...    the file or dir path you want to change eol.
-    \\-t, --type            <str>...    LF or CRLF
-    \\-x, --extension       <str>...    file extension, example: zig
+    \\-p, --path            <str>       the file or dir path you want to change eol.
+    \\-t, --type            <str>       LF or CRLF
+    \\-x, --extension       <str>       file extension, example: zig
     \\-h, --hidden_enable               available to change hidden dir and file
-    \\
+    \\<str>                             same with --path and use OS eol as default 
 ;
 
 pub const helpMessage =
@@ -16,6 +16,7 @@ pub const helpMessage =
     \\-t, --type        <str>   target eol type, example: eoler --type LF
     \\-x, --extension   <str>   file extension, example: zig
     \\-h, --hidden_enable       available to change hidden dir and file
+    \\<str>                     same with --path and use OS eol as default
 ;
 
 pub const CR: [1]u8 = [1]u8{0x0D};

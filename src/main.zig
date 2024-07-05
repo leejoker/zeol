@@ -1,11 +1,13 @@
 const cons = @import("constants.zig");
 const clap = @import("clap");
 const std = @import("std");
+const builtin = @import("builtin");
 
 const debug = std.debug;
 const io = std.io;
 const fs = std.fs;
 const process = std.process;
+const os = builtin.os.tag;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -31,13 +33,18 @@ pub fn main() !void {
         debug.print("Help Message: \n{s}\n", .{cons.helpMessage});
         return;
     } else {
-        if (res.args.path.len > 0) {
-            fileDirPath = res.args.path[0];
-        } else {
-            debug.print("path is empty", .{});
+        if (res.positionals.len == 0 and res.args.path == null) {
+            debug.print("path is empty.\n\n", .{});
+            debug.print("Help Message: \n{s}\n", .{cons.helpMessage});
+            return;
         }
-        if (res.args.type.len > 0) {
-            const eolTypeStr = res.args.type[0];
+        if (res.args.path != null) {
+            fileDirPath = res.args.path.?;
+        } else if (res.positionals.len > 0) {
+            fileDirPath = res.positionals[0];
+        }
+        if (res.args.type != null) {
+            const eolTypeStr = res.args.type.?;
             if (std.mem.eql(u8, eolTypeStr, "LF")) {
                 eolType = 0;
             } else if (std.mem.eql(u8, eolTypeStr, "CRLF")) {
@@ -46,11 +53,18 @@ pub fn main() !void {
                 return cons.ZEolError.WrongEolTypeError;
             }
         } else {
-            debug.print("type is empty", .{});
-            return;
+            var eolTypeStr: []const u8 = undefined;
+            if (os == .windows) {
+                eolType = 1;
+                eolTypeStr = "CRLF";
+            } else {
+                eolType = 0;
+                eolTypeStr = "LF";
+            }
+            debug.print("use OS eol '{s}' as default.\n", .{eolTypeStr});
         }
-        if (res.args.extension.len > 0) {
-            extension = res.args.extension[0];
+        if (res.args.extension != null) {
+            extension = res.args.extension.?;
         }
         if (res.args.hidden_enable != 0) {
             hidenEnable = true;
